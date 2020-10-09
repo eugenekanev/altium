@@ -8,7 +8,7 @@ using Serilog;
 
 namespace AltiumHost.Generator
 {
-    public class MagicWordsGenerator
+    internal class MagicWordsGenerator
     {
         private readonly BigInteger _fileSize;
         private readonly int _maxDifferentWords;

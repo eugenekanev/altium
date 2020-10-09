@@ -2,6 +2,7 @@
 using System.Numerics;
 using System.Threading.Tasks;
 using AltiumHost.Generator;
+using AltiumHost.Sorting;
 using Autofac;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -14,6 +15,10 @@ namespace AltiumHost
         private static readonly string Maxdifferentwords = "maxdifferentwords";
         private static readonly string Targetfilename = "targetfilename";
         private static readonly string GenerateCommand = "generate";
+
+        private static readonly string ThresholdCountOfRecordsInTempFile = "thresholdCountOfRecordsInTempFile";
+        private static readonly string MaxCuttingParallelism = "maxcuttingparallelism";
+        private static readonly string SortCommand = "sort";
 
         private static async Task<int> Main(string[] args)
         {
@@ -44,6 +49,13 @@ namespace AltiumHost
 
                         await container.Resolve<IFileGenerator>().GenerateAsync(sourceFileName, fileSize);
                     }
+
+                    if (args[0] == SortCommand)
+                    {
+                        Log.Debug($"The file with name {args[1]} will be sorted");
+
+                        await container.Resolve<IFileSorter>().Sort(args[1]);
+                    }
                 }
 
                 return 0;
@@ -59,12 +71,28 @@ namespace AltiumHost
         {
             var txtprocessorwriterthreshold = configuration.GetValue<int>(Txtprocessorwriterthreshold);
             var maxdifferentwords = configuration.GetValue<int>(Maxdifferentwords);
+            var thresholdCountOfRecordsInTempFile = configuration.GetValue<int>(ThresholdCountOfRecordsInTempFile);
+            var maxCuttingParallelism = configuration.GetValue<int>(MaxCuttingParallelism);
 
             var containerBuilder = new ContainerBuilder();
 
             containerBuilder.RegisterType<MagicFileGenerator>()
                 .As<IFileGenerator>().WithParameter("maxDifferentWords", maxdifferentwords)
-                .WithParameter("txtprocessorwriterthreshold", txtprocessorwriterthreshold).SingleInstance();
+                .WithParameter("txtprocessorwriterthreshold", txtprocessorwriterthreshold);
+
+            containerBuilder.RegisterType<FileCutter>()
+                .As<IFileCutter>();
+
+            containerBuilder.RegisterType<FileCutterFileSorter>()
+                .As<IFileSorter>();
+
+            containerBuilder.RegisterType<DirectFileMerger>()
+                .As<IFileMerger>();
+
+            containerBuilder.RegisterType<LimitedFileSortedRecordAggregator>()
+                .WithParameter("thresholdCountOfRecordsInTempFile", thresholdCountOfRecordsInTempFile)
+                .WithParameter("maxCuttingParallelism", maxCuttingParallelism)
+                .As<ISortedRecordAggregator>();
 
             return containerBuilder.Build();
         }

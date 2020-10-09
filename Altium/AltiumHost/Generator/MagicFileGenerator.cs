@@ -28,7 +28,8 @@ namespace AltiumHost.Generator
             var magicWordsGenerator =
                 new MagicWordsGenerator(fileSize, _maxDifferentWords, _channel.Writer);
 
-            var generatorTask = Task.Run(async () => await magicWordsGenerator.GenerateWordsAsync().ConfigureAwait(false));
+            var generatorTask =
+                Task.Run(async () => await magicWordsGenerator.GenerateWordsAsync().ConfigureAwait(false));
 
             tasks.Add(generatorTask);
 
